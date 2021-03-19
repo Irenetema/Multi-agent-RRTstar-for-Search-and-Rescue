@@ -81,7 +81,7 @@ def generate_initial_start_end_pos(env_map, n_pts, max_dist, uav_size, which='st
     return all_start_points
 
 
-def main(nbr_uavs=4):
+def main(nbr_uavs=4, with_obstacle=True):
     map = Map(480, 0, 0, 640)
     size_uav = 8  # size of the uav (used to check for collision between the uavs)
     com_range_uav = 40  # communication range of the uavs
@@ -95,11 +95,12 @@ def main(nbr_uavs=4):
     starts = [Point(0, 0), Point(0, 40), Point(40, 0), Point(0, 70), Point(70, 0)]
     ends = [Point(610, 450), Point(620, 420), Point(600, 430), Point(640, 420), Point(600, 460)]
 
-    map.add_obstacle(CircleObstacle(pos=Point(400, 300), radius=50))
-    # map.add_obstacle(RectangleObstacle(top=200, down=100, left=100, right=300))
-    map.add_obstacle(RectangleObstacle(top=100, down=50, left=450, right=550))
-    map.add_obstacle(RectangleObstacle(top=200, down=150, left=50, right=250))
-    map.add_obstacle(RectangleObstacle(top=400, down=300, left=50, right=200))
+    if with_obstacle:
+        map.add_obstacle(CircleObstacle(pos=Point(400, 300), radius=50))
+        # map.add_obstacle(RectangleObstacle(top=200, down=100, left=100, right=300))
+        map.add_obstacle(RectangleObstacle(top=100, down=50, left=450, right=550))
+        map.add_obstacle(RectangleObstacle(top=200, down=150, left=50, right=250))
+        map.add_obstacle(RectangleObstacle(top=400, down=300, left=50, right=200))
     uavs = {}
     rrt_start_planner = {}
 
@@ -135,6 +136,7 @@ def main(nbr_uavs=4):
         target_point = Point(uavs[0].map.left + uavs[0].map.length * random.uniform(0.3, 0.999),
                              uavs[0].map.down + uavs[0].map.width * random.uniform(0.3, 0.999))
 
+    n_loop = 0
     # while map.is_open:
     while map.is_open:
         # if all(sub_target_reached):
@@ -170,23 +172,24 @@ def main(nbr_uavs=4):
 
                 if target_point.dist(uavs[i].curr_position) <= uav_vision_range:
                     print('******* MISSION COMPLETE: Target Found! **********')
-                    # ##
-                    # ##
-                    # for ii in range(nbr_uavs):
-                    #     map.add_geometry(type='point', pos=uavs[ii].curr_position.tuple(), size=size_uav,
-                    #                      color=path_colors[ii])
-                    #     map.add_geometry(type='circle', pos=uavs[ii].curr_position.tuple(), radius=com_range_uav,
-                    #                      filled=False,
-                    #                      color=path_colors[ii])
-                    #
-                    #     # add the starting and goal position of each uav in the environment
-                    #     map.add_geometry(type='point', pos=starts[ii].tuple(), size=size_uav, color=(100, 0, 0))
-                    #     map.add_geometry(type='point', pos=ends[ii].tuple(), size=size_uav, color=(0, 100, 0))
-                    #     for jj in range(len(uavs[ii].final_path) - 1):
-                    #         map.add_geometry(type='line', start=uavs[ii].final_path[j].tuple(),
-                    #                          end=uavs[ii].final_path[jj + 1].tuple(), color=path_colors[ii])
-                    # ##
-                    # ##
+                    ##
+                    ##
+                    if i < nbr_uavs - 1:
+                        for ii in range(i + 1, nbr_uavs):
+                            map.add_geometry(type='point', pos=uavs[ii].curr_position.tuple(), size=size_uav,
+                                             color=path_colors[ii])
+                            map.add_geometry(type='circle', pos=uavs[ii].curr_position.tuple(), radius=com_range_uav,
+                                             filled=False,
+                                             color=path_colors[ii])
+
+                            # add the starting and goal position of each uav in the environment
+                            map.add_geometry(type='point', pos=starts[ii].tuple(), size=size_uav, color=(100, 0, 0))
+                            map.add_geometry(type='point', pos=ends[ii].tuple(), size=size_uav, color=(0, 100, 0))
+                            for jj in range(len(uavs[ii].final_path) - 1):
+                                map.add_geometry(type='line', start=uavs[ii].final_path[jj].tuple(),
+                                                 end=uavs[ii].final_path[jj + 1].tuple(), color=path_colors[ii])
+                    ##
+                    ##
                     # display the target in different color
                     map.add_geometry(type='point', pos=target_point.tuple(), size=2*size_uav, color=(50, 0, 50))
                     # display the uav that found the target in different color
@@ -204,7 +207,11 @@ def main(nbr_uavs=4):
                     uavs[j].new_sub_target(new_sub_targets[j])
 
         map.render()
-        time.sleep(0.25)
+        if n_loop == 0:
+            time.sleep(10)
+            n_loop += 1
+        else:
+            time.sleep(0.2)
 
 
 """
@@ -239,5 +246,5 @@ def main(nbr_uavs = 3):
 """
 
 if __name__ == '__main__':
-    number_uavs = 5
-    main(number_uavs)
+    number_uavs = 3
+    main(number_uavs, with_obstacle=False)
